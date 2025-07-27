@@ -1,24 +1,16 @@
-# First, install all core dependencies that other packages rely on.
-# These must be at the top.
-torch
-torchvision
-torchaudio
-
-# Next, install `deepdoctection` and its dependencies.
-deepdoctection[layout,pt]
-
-# Now, install the modified `detectron2` fork.
-# It's best to use the `deepdoctection` fork's main branch,
-# as it contains specific patches for compatibility.
-
-
-# The rest of your dependencies can follow.
+# Core library for document extraction
 unstructured[pdf]
+
+# Streamlit for the web application
 streamlit
+
+# Dependencies for PDF processing
 pdf2image
 Pillow
 opencv-python
 lxml
+
+# Basic Python dependencies
 numpy
 pandas
 scipy
