@@ -1,33 +1,25 @@
-# Core libraries for the Document Extraction pipeline
-deepdoctection[pt]
-
-# Use the specific Git URL for detectron2 from the deepdoctection fork
-# This tells Streamlit to clone and install from this repo.
-# The `v0.6` tag is crucial for compatibility.
-git+https://github.com/facebookresearch/detectron2.git
-
-# Unstructured library with PDF support
-unstructured[pdf]
-
-# Streamlit for the web application
-streamlit
-
-# Dependencies for image and PDF processing
-pdf2image
-Pillow
-opencv-python
-lxml
-
-# Deep learning backend (PyTorch)
-# Streamlit Cloud's containers typically come with a version of CUDA pre-installed.
-# Installing a compatible CPU-only version is often safer and easier for free tiers.
-# If you have a GPU instance, you'd specify the CUDA version here.
-# For CPU-only, the following lines are sufficient.
+# First, install all core dependencies that other packages rely on.
+# These must be at the top.
 torch
 torchvision
 torchaudio
 
-# Other sub-dependencies
+# Next, install `deepdoctection` and its dependencies.
+deepdoctection[pt]
+
+# Now, install the modified `detectron2` fork.
+# It's best to use the `deepdoctection` fork's main branch,
+# as it contains specific patches for compatibility.
+git+https://github.com/facebookresearch/detectron2.git
+
+
+# The rest of your dependencies can follow.
+unstructured[pdf]
+streamlit
+pdf2image
+Pillow
+opencv-python
+lxml
 numpy
 pandas
 scipy
