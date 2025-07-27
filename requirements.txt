@@ -4,13 +4,12 @@ unstructured[pdf]
 # Streamlit for the web application
 streamlit
 
-# Dependencies for PDF processing
-pdf2image
-Pillow
-opencv-python
-lxml
+# Use the headless version of OpenCV for servers
+opencv-python-headless
 
-# Basic Python dependencies
+# Other dependencies
+Pillow
+lxml
 numpy
 pandas
 scipy
