@@ -1,10 +1,10 @@
 import streamlit as st
 import json
+import os
 from document_extractor import DocumentExtractor
 
-#dummy comment
+
 # We need to instantiate the class once.
-# Streamlit caches objects by default, but we can be explicit.
 @st.cache_resource
 def get_extractor():
     """Returns a singleton instance of the DocumentExtractor."""
@@ -12,22 +12,20 @@ def get_extractor():
 
 
 # Set up the Streamlit page
-st.set_page_config(
-    page_title="Document Extraction AI",
-    page_icon="📄",
-    layout="wide"
-)
+st.set_page_config(page_title="Document Extraction App", layout="wide")
 
-st.title("Document Extraction AI")
-st.subheader("Extract structured data from your PDFs and images.")
+st.title("Document Extraction App")
+st.write("Upload a PDF to extract its content.")
 
-# File uploader widget
-uploaded_file = st.file_uploader("Choose a document...", type=["pdf", "jpg", "jpeg", "png"])
+# File uploader
+uploaded_file = st.file_uploader("Choose a PDF file", type="pdf")
 
-if uploaded_file is not None:
-    # A Streamlit file uploader returns a BytesIO object.
-    # We'll save it to a temporary file to be processed by deepdoctection.
-    with open("temp_doc.pdf", "wb") as f:
+if uploaded_file:
+    # Save the uploaded file to a temporary location
+    temp_dir = "temp_pdfs"
+    os.makedirs(temp_dir, exist_ok=True)
+    file_path = os.path.join(temp_dir, uploaded_file.name)
+    with open(file_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
     # Get the extractor instance
@@ -35,32 +33,32 @@ if uploaded_file is not None:
 
     # Create a button to trigger the extraction
     if st.button("Start Extraction"):
-        with st.spinner("Processing document... This may take a few moments."):
-            try:
-                # Call the extraction method on the temporary file
-                extracted_data = extractor.extract_from_document("temp_doc.pdf")
+        st.info("Extraction started...")
+        try:
+            # The extraction logic
+            extracted_info = extractor.extract_from_document(file_path)
 
-                st.success("Extraction complete!")
+            st.success("Extraction complete!")
 
-                # Display the results
-                st.subheader("Extracted Content")
+            # Display the summary of the extraction
+            st.subheader("Extraction Summary")
 
-                # Use st.json to display the full, structured output
-                with st.expander("View Raw JSON Output"):
-                    st.json(extracted_data)
+            # The output now uses the 'pages' key, not 'elements'
+            for page in extracted_info['pages']:
+                st.write(f"**Page {page['page_number']}:**")
+                st.code(page['text'][:200] + "...")
 
-                # Now, display a user-friendly summary
-                st.subheader("Summary")
-                for page_data in extracted_data["elements"]:
-                    st.write(f"**Page {page_data['page_number']}**")
-                    for element in page_data["data"]:
-                        if element["type"] == "title":
-                            st.info(f"**Title:** {element['text']}")
-                        elif element["type"] == "text":
-                            st.write(f"**Text:** {element['text'][:200]}...")  # Display first 200 chars
-                        elif element["type"] == "table":
-                            st.success(f"**Table Found:**")
-                            st.code(element['table_data'])  # Display table data as code
+            # Show a download button for the full JSON
+            json_string = json.dumps(extracted_info, indent=4)
+            st.download_button(
+                label="Download JSON",
+                data=json_string,
+                file_name=f"{uploaded_file.name}_extracted.json",
+                mime="application/json"
+            )
 
-            except Exception as e:
-                st.error(f"An error occurred during extraction: {e}")
+        except Exception as e:
+            st.error(f"An error occurred during extraction: {e}")
+        finally:
+            # Clean up the temporary file
+            os.remove(file_path)
