@@ -36,22 +36,22 @@ class DocumentExtractor:
 
     def _initialize_pipeline(self):
         """
-        Sets up the deepdoctection pipeline.
+        Sets up the deepdoctection pipeline using the modern API.
         """
-        # Ensure deepdoctection's config file exists
-        if not Path(self.config_file).exists():
-            self._create_default_config()
+        # The modern approach is to directly instantiate a DoctectionPipe and
+        # pass the components to it.
+        # This pipeline will perform layout analysis and OCR.
+        self.dd_pipeline = dd.DoctectionPipe(
+            # A layout analysis model for detecting elements like text, titles, tables, etc.
+            # deepdoctection automatically downloads the model if not present.
+            pipeline_component_1=dd.dd_layout.LayoutDetection(self.model_name),
 
-        self.dd_pipeline = dd.load_dd_ensemble(
-            path_config_yml=self.config_file,
-            # Adjust the model based on your needs.
-            # LayoutLMv3 is a good all-purpose multimodal model.
-            # You can also use other models available on Hugging Face.
-            # Example: "microsoft/layoutlmv3-base"
-            # The model is automatically downloaded on the first run.
-            # The 'analyze' pipeline is a good default for extraction.
-            pipeline_name="layout_analysis_and_tables",
-            dd_config=dd.get_configs_from_yml(self.config_file)
+            # An OCR component to convert image text to machine-readable text.
+            # We will use TesseractOCR, which you have installed via apt.txt.
+            pipeline_component_2=dd.dd_ocr.TesseractOCR()
+
+            # You can add more components here for table recognition, etc.
+            # For a basic pipeline, these two are sufficient.
         )
 
     def _create_default_config(self):
