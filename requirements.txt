@@ -4,7 +4,7 @@ deepdoctection[pt]
 # Use the specific Git URL for detectron2 from the deepdoctection fork
 # This tells Streamlit to clone and install from this repo.
 # The `v0.6` tag is crucial for compatibility.
-git+https://github.com/deepdoctection/detectron2.git@v.0.43.1#egg=detectron2
+git+https://github.com/facebookresearch/detectron2.git
 
 # Unstructured library with PDF support
 unstructured[pdf]
