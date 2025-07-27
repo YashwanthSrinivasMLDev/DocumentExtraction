@@ -2,7 +2,7 @@ import streamlit as st
 import json
 from document_extractor import DocumentExtractor
 
-
+#dummy comment
 # We need to instantiate the class once.
 # Streamlit caches objects by default, but we can be explicit.
 @st.cache_resource
