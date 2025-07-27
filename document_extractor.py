@@ -33,8 +33,8 @@ class DocumentExtractor:
 
         print(f"Processing document with unstructured: {file_path}")
 
-        # Use unstructured's hi_res strategy to get detailed output
-        elements = partition_pdf(filename=file_path, strategy="hi_res")
+        # Use unstructured's fast strategy to avoid deep learning dependencies
+        elements = partition_pdf(filename=file_path, strategy="fast")
 
         return self._format_output(elements, file_path)
 
@@ -51,7 +51,6 @@ class DocumentExtractor:
         page_data = []
 
         for element in elements:
-            # Check for page breaks
             if element.metadata.page_number is not None and element.metadata.page_number != current_page_number:
                 if page_data:
                     extracted_data["elements"].append({
@@ -61,7 +60,6 @@ class DocumentExtractor:
                 current_page_number = element.metadata.page_number
                 page_data = []
 
-            # Format each element
             element_dict = {
                 "type": "unknown",
                 "text": element.text,
@@ -83,7 +81,6 @@ class DocumentExtractor:
 
             page_data.append(element_dict)
 
-        # Append the last page's data
         if page_data:
             extracted_data["elements"].append({
                 "page_number": current_page_number,
@@ -100,3 +97,30 @@ def save_to_json(data: Dict[str, Any], output_path: str):
     with open(output_path, "w") as f:
         json.dump(data, f, indent=4)
     print(f"Extraction result saved to {output_path}")
+
+
+if __name__ == "__main__":
+    sample_pdf_path = "sample.pdf"
+    if not os.path.exists(sample_pdf_path):
+        print("Please place a PDF file named 'sample.pdf' in the same directory.")
+        with open(sample_pdf_path, "w") as f:
+            f.write("This is a dummy PDF file.")
+        print("A dummy file 'sample.pdf' has been created.")
+        exit()
+
+    extractor = DocumentExtractor()
+
+    extracted_info = extractor.extract_from_document(sample_pdf_path)
+
+    save_to_json(extracted_info, "extracted_data.json")
+
+    print("\n--- Summary of Extracted Data ---")
+    for page in extracted_info["elements"]:
+        print(f"Page {page['page_number']}:")
+        for element in page["data"]:
+            if element["type"] == "title":
+                print(f"  - Title: {element['text']}")
+            elif element["type"] == "table":
+                print(f"  - Found a table with data:\n{element['text']}")
+            elif element["type"] == "text":
+                print(f"  - Text: {element['text'][:50]}...")
