@@ -8,6 +8,10 @@ import cv2
 # Import deepdoctection
 import deepdoctection as dd
 
+# Import the necessary pipeline components directly
+from deepdoctection.dataprocessing.layout import LayoutDetection
+from deepdoctection.ocr import TesseractOCR
+
 # Import other necessary libraries
 from unstructured.partition.pdf import partition_pdf
 from unstructured.documents.elements import Title, Table, Text
@@ -19,18 +23,19 @@ class DocumentExtractor:
     using open-source tools.
     """
 
-    def __init__(self, model_name: str = "deepdoctection/layoutlmv3-base-finetuned-funsd",
-                 config_file: str = "dd_config.yaml"):
+    def __init__(self, model_name: str = "deepdoctection/layoutlmv3-base-finetuned-funsd"):
         """
         Initializes the document extraction pipeline.
 
         Args:
             model_name (str): The Hugging Face model to use for layout and information extraction.
-            config_file (str): Path to the deepdoctection configuration file.
         """
         print("Initializing DocumentExtractor...")
-        self.config_file = config_file
         self.model_name = model_name
+
+        # We no longer need this variable as we're not using a config file
+        self.config_file = None
+
         self._initialize_pipeline()
         print("DocumentExtractor initialized successfully.")
 
@@ -40,49 +45,21 @@ class DocumentExtractor:
         """
         # The modern approach is to directly instantiate a DoctectionPipe and
         # pass the components to it.
-        # This pipeline will perform layout analysis and OCR.
+        # We import LayoutDetection and TesseractOCR directly, so we can use them
+        # without the incorrect dd.dd_layout prefix.
         self.dd_pipeline = dd.DoctectionPipe(
             # A layout analysis model for detecting elements like text, titles, tables, etc.
-            # deepdoctection automatically downloads the model if not present.
-            pipeline_component_1=dd.dd_layout.LayoutDetection(self.model_name),
+            pipeline_component_1=LayoutDetection(self.model_name),
 
             # An OCR component to convert image text to machine-readable text.
-            # We will use TesseractOCR, which you have installed via apt.txt.
-            pipeline_component_2=dd.dd_ocr.TesseractOCR()
-
-            # You can add more components here for table recognition, etc.
-            # For a basic pipeline, these two are sufficient.
+            pipeline_component_2=TesseractOCR()
         )
 
     def _create_default_config(self):
         """
-        Creates a default deepdoctection config file.
-        This is a simplified version; in a real project, you would
-        customize this for specific use cases.
+        This method is no longer needed with the modern API.
         """
-        default_config = {
-            "OCR_CONFIG": {
-                "OCR_METHOD": "TesseractOCR"
-            },
-            "LAYOUT_MODEL": {
-                "NAME": "layoutlmv3",
-                "MODEL_NAME_OR_PATH": self.model_name,
-            },
-            "TABLE_SEGMENTATION_MODEL": {
-                "NAME": "table_segmentation_model",
-                "MODEL_NAME_OR_PATH": "deepdoctection/yolox-x-fintuned-table-segmentation",
-            },
-            "TABLE_RECOGNITION_MODEL": {
-                "NAME": "table_recognition_model",
-                "MODEL_NAME_OR_PATH": "deepdoctection/deformable-detr-table-transformer",
-            },
-            "IMAGE_TO_TEXT": {
-                "OCR_METHOD": "TesseractOCR"
-            }
-        }
-        with open(self.config_file, "w") as f:
-            json.dump(default_config, f, indent=4)
-        print(f"Created default config file: {self.config_file}")
+        pass
 
     def extract_from_document(self, file_path: str) -> Dict[str, Any]:
         """
@@ -99,16 +76,12 @@ class DocumentExtractor:
 
         print(f"Processing document: {file_path}")
 
-        # The core extraction process using deepdoctection
         try:
-            # We use `analyze` which performs OCR, layout, and table analysis
             analyzed_doc = self.dd_pipeline.analyze(path=file_path)
+            return self._format_output(analyzed_doc)
         except Exception as e:
             print(f"Error processing with deepdoctection: {e}. Falling back to unstructured.")
-            # Fallback to unstructured for basic text extraction if dd fails
             return self._fallback_unstructured_extraction(file_path)
-
-        return self._format_output(analyzed_doc)
 
     def _format_output(self, analyzed_doc) -> Dict[str, Any]:
         """
@@ -132,7 +105,6 @@ class DocumentExtractor:
 
             # Extract tables
             for table in page.tables:
-                # `table.csv` contains the extracted table data as a string
                 page_elements.append({
                     "type": "table",
                     "table_data": table.get_table_csv(),
@@ -169,7 +141,6 @@ class DocumentExtractor:
         page_data = []
 
         for element in elements:
-            # Unstructured provides page numbers
             if element.metadata.page_number is not None and element.metadata.page_number != current_page_number:
                 if page_data:
                     fallback_data["elements"].append({
@@ -213,33 +184,20 @@ def save_to_json(data: Dict[str, Any], output_path: str):
 
 
 if __name__ == "__main__":
-    # --- Example Usage ---
-
-    # 1. Prepare a sample PDF file for testing
-    # You will need to have a PDF file named "sample.pdf" in the same directory.
-    # For a real-world project, you would pass the file path to your specific document.
-    # You can create a simple PDF with a title, some text, and a table for testing.
-
     sample_pdf_path = "sample.pdf"
     if not os.path.exists(sample_pdf_path):
         print("Please place a PDF file named 'sample.pdf' in the same directory.")
-        # Create a dummy file to avoid errors, but it won't be processed.
-        # This is just for demonstration purposes.
         with open(sample_pdf_path, "w") as f:
             f.write("This is a dummy PDF file.")
         print("A dummy file 'sample.pdf' has been created.")
         exit()
 
-    # 2. Instantiate the extractor
     extractor = DocumentExtractor()
 
-    # 3. Process the document
     extracted_info = extractor.extract_from_document(sample_pdf_path)
 
-    # 4. Save the result to a JSON file
     save_to_json(extracted_info, "extracted_data.json")
 
-    # 5. Print a summary of the extracted data
     print("\n--- Summary of Extracted Data ---")
     for page in extracted_info["elements"]:
         print(f"Page {page['page_number']}:")
@@ -249,5 +207,4 @@ if __name__ == "__main__":
             elif element["type"] == "table":
                 print(f"  - Found a table with data:\n{element['table_data']}")
             elif element["type"] == "text":
-                # We'll just print the first 50 characters of text blocks for a clean summary
                 print(f"  - Text: {element['text'][:50]}...")
