@@ -6,6 +6,9 @@ from PIL import Image
 from pypdf import PdfReader
 from io import BytesIO
 
+# Explicitly set the path to the tesseract executable
+pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
+
 
 class DocumentExtractor:
     """
