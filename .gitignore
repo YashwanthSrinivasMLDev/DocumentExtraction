@@ -1,0 +1,42 @@
+# --- Python Virtual Environment ---
+venv/
+.venv/
+env/
+.env/
+
+# --- Temporary and Output Files ---
+# Ignore the temporary file created by the Streamlit app
+temp_doc.pdf
+
+# Ignore the JSON output file
+extracted_data.json
+
+# --- deepdoctection and Hugging Face Cache ---
+# deepdoctection stores models and data in a cache directory.
+.deepdoctection/
+
+# Hugging Face models are cached here by default
+# This can be a large directory, so it's critical to ignore it.
+huggingface_cache/
+.cache/huggingface/
+
+# --- General Python Files and Directories ---
+# Byte-compiled files
+__pycache__/
+*.pyc
+
+# Distribution-related files
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# OS and IDE-related files
+.DS_Store
+.idea/
+.vscode/
+
+# --- Streamlit Cache ---
+# Streamlit creates a cache directory for downloaded models and data.
+.streamlit/

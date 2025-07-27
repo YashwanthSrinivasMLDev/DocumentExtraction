@@ -1,0 +1,26 @@
+# Core libraries for the Document Extraction pipeline
+deepdoctection[layout,train]
+unstructured[pdf]
+
+# Streamlit for the web application
+streamlit
+
+# Dependencies for image and PDF processing
+pdf2image
+Pillow
+
+# deepdoctection relies on a deep learning backend (PyTorch or TensorFlow)
+# We will use PyTorch, which is generally well-supported.
+torch
+torchvision
+
+# Some dependencies for the deepdoctection and unstructured libraries
+# It's good practice to list these explicitly, even if they are sub-dependencies.
+# This can help avoid version conflicts.
+detectron2
+numpy
+pandas
+opencv-python
+layoutparser
+scipy
+lxml
