@@ -5,7 +5,7 @@ torchvision
 torchaudio
 
 # Next, install `deepdoctection` and its dependencies.
-deepdoctection[pt]
+deepdoctection[layout,pt]
 
 # Now, install the modified `detectron2` fork.
 # It's best to use the `deepdoctection` fork's main branch,
