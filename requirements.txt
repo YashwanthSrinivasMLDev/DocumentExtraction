@@ -10,7 +10,6 @@ deepdoctection[pt]
 # Now, install the modified `detectron2` fork.
 # It's best to use the `deepdoctection` fork's main branch,
 # as it contains specific patches for compatibility.
-git+https://github.com/facebookresearch/detectron2.git
 
 
 # The rest of your dependencies can follow.
