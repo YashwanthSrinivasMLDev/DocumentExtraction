@@ -1,15 +1,11 @@
-# Core library for document extraction
-unstructured[pdf]
+# Library for reading and parsing PDFs
+pypdf
+
+# Python wrapper for the Tesseract OCR engine
+pytesseract
 
 # Streamlit for the web application
 streamlit
 
-# Use the headless version of OpenCV for servers
-opencv-python-headless
-
-# Other dependencies
+# Other standard libraries
 Pillow
-lxml
-numpy
-pandas
-scipy

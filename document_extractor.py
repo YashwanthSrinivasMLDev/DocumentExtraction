@@ -1,93 +1,95 @@
 import os
 import json
 from typing import Dict, List, Any
-from unstructured.partition.pdf import partition_pdf
-from unstructured.documents.elements import Title, Table, Text, ListItem, NarrativeText, Header, Footer
+import pytesseract
+from PIL import Image
+from pypdf import PdfReader
+from io import BytesIO
 
 
 class DocumentExtractor:
     """
-    A class to orchestrate document extraction using the simpler unstructured library.
+    A class for simple document extraction using pypdf and pytesseract.
+    This approach is highly reliable and avoids complex dependencies.
     """
 
     def __init__(self):
         """
         Initializes the document extractor.
-        No complex pipeline to initialize here!
         """
-        print("Initializing DocumentExtractor with unstructured...")
+        print("Initializing DocumentExtractor with pypdf and pytesseract...")
+        # Check if tesseract is in PATH
+        try:
+            pytesseract.get_tesseract_version()
+            print("Tesseract OCR is available.")
+        except pytesseract.TesseractNotFoundError:
+            print("Tesseract is not found. Please ensure it's installed and in PATH.")
+            raise
         print("DocumentExtractor initialized successfully.")
 
     def extract_from_document(self, file_path: str) -> Dict[str, Any]:
         """
-        Processes a single document and extracts all available information using unstructured.
+        Extracts text from a PDF file using pypdf and performs OCR on images.
 
         Args:
             file_path (str): The path to the document file.
 
         Returns:
-            Dict[str, Any]: A dictionary containing the extracted information.
+            Dict[str, Any]: A dictionary containing the extracted text per page.
         """
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"Document not found at {file_path}")
 
-        print(f"Processing document with unstructured: {file_path}")
+        print(f"Processing document: {file_path}")
 
-        # Use unstructured's fast strategy to avoid deep learning dependencies
-        elements = partition_pdf(filename=file_path, strategy="fast")
-
-        return self._format_output(elements, file_path)
-
-    def _format_output(self, elements: List[Any], file_path: str) -> Dict[str, Any]:
-        """
-        Formats the output from the unstructured library into a structured dictionary.
-        """
         extracted_data = {
             "file_path": file_path,
-            "elements": []
+            "pages": []
         }
 
-        current_page_number = -1
-        page_data = []
+        try:
+            reader = PdfReader(file_path)
+            for page_number, page in enumerate(reader.pages):
+                page_text = page.extract_text()
 
-        for element in elements:
-            if element.metadata.page_number is not None and element.metadata.page_number != current_page_number:
-                if page_data:
-                    extracted_data["elements"].append({
-                        "page_number": current_page_number,
-                        "data": page_data
-                    })
-                current_page_number = element.metadata.page_number
-                page_data = []
+                # Check for images and perform OCR if necessary
+                if not page_text.strip():
+                    try:
+                        print(f"No text extracted on page {page_number + 1}, attempting OCR on images...")
+                        page_text = self._extract_text_from_page_images(page)
+                    except Exception as e:
+                        print(f"OCR failed for page {page_number + 1}: {e}")
+                        page_text = ""
 
-            element_dict = {
-                "type": "unknown",
-                "text": element.text,
-                "bounding_box": element.metadata.bbox
-            }
-            if isinstance(element, Title):
-                element_dict["type"] = "title"
-            elif isinstance(element, Table):
-                element_dict["type"] = "table"
-                element_dict["text"] = element.text
-            elif isinstance(element, NarrativeText):
-                element_dict["type"] = "text"
-            elif isinstance(element, ListItem):
-                element_dict["type"] = "list_item"
-            elif isinstance(element, Header):
-                element_dict["type"] = "header"
-            elif isinstance(element, Footer):
-                element_dict["type"] = "footer"
+                extracted_data["pages"].append({
+                    "page_number": page_number + 1,
+                    "text": page_text
+                })
 
-            page_data.append(element_dict)
-
-        if page_data:
-            extracted_data["elements"].append({
-                "page_number": current_page_number,
-                "data": page_data
-            })
+        except Exception as e:
+            print(f"Error during PDF processing: {e}")
+            raise
 
         return extracted_data
+
+    def _extract_text_from_page_images(self, page) -> str:
+        """
+        Helper function to extract text from images on a single PDF page using Tesseract OCR.
+        """
+        text_from_images = []
+        for image_file_obj in page.images:
+            try:
+                # Read the image data
+                image_data = image_file_obj.data
+                image = Image.open(BytesIO(image_data))
+
+                # Perform OCR using Tesseract
+                ocr_text = pytesseract.image_to_string(image)
+                text_from_images.append(ocr_text)
+            except Exception as e:
+                print(f"Failed to process an image with OCR: {e}")
+
+        return "\n".join(text_from_images)
 
 
 def save_to_json(data: Dict[str, Any], output_path: str):
@@ -109,18 +111,9 @@ if __name__ == "__main__":
         exit()
 
     extractor = DocumentExtractor()
-
     extracted_info = extractor.extract_from_document(sample_pdf_path)
-
     save_to_json(extracted_info, "extracted_data.json")
-
     print("\n--- Summary of Extracted Data ---")
-    for page in extracted_info["elements"]:
+    for page in extracted_info["pages"]:
         print(f"Page {page['page_number']}:")
-        for element in page["data"]:
-            if element["type"] == "title":
-                print(f"  - Title: {element['text']}")
-            elif element["type"] == "table":
-                print(f"  - Found a table with data:\n{element['text']}")
-            elif element["type"] == "text":
-                print(f"  - Text: {element['text'][:50]}...")
+        print(f"  - Text: {page['text'][:100]}...")
